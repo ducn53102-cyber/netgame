@@ -7,7 +7,7 @@ interface UnityInspectorMockupProps {
 }
 
 export const UnityInspectorMockup: React.FC<UnityInspectorMockupProps> = ({ config }) => {
-  const [selectedComponent, setSelectedComponent] = useState<'satisfaction' | 'station' | 'player' | 'money' | 'mobile_button'>('satisfaction');
+  const [selectedComponent, setSelectedComponent] = useState<'real_estate' | 'satisfaction' | 'station' | 'player' | 'money' | 'mobile_button' | 'realistic_npc'>('real_estate');
 
   return (
     <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 md:p-6 shadow-xl space-y-6">
@@ -28,6 +28,8 @@ export const UnityInspectorMockup: React.FC<UnityInspectorMockupProps> = ({ conf
         {/* Tab switcher for components */}
         <div className="flex flex-wrap gap-1 p-1 bg-slate-950 border border-slate-800 rounded-xl">
           {[
+            { id: 'real_estate', label: '★ Mua Mặt Bằng (Real Estate 5M)' },
+            { id: 'realistic_npc', label: '★ Khách 3D Nam Á (Humanoid & IK)' },
             { id: 'satisfaction', label: 'CustomerSatisfaction (Điểm Hài Lòng)' },
             { id: 'station', label: 'Bàn Máy (ComputerStation)' },
             { id: 'player', label: 'Camera Player (PlayerInteraction)' },
@@ -39,7 +41,7 @@ export const UnityInspectorMockup: React.FC<UnityInspectorMockupProps> = ({ conf
               onClick={() => setSelectedComponent(tab.id as typeof selectedComponent)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 selectedComponent === tab.id
-                  ? 'bg-slate-800 text-emerald-400 border border-slate-700 shadow-sm'
+                  ? 'bg-slate-800 text-amber-400 border border-slate-700 shadow-sm'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -72,7 +74,9 @@ export const UnityInspectorMockup: React.FC<UnityInspectorMockupProps> = ({ conf
               type="text"
               readOnly
               value={
-                selectedComponent === 'satisfaction'
+                selectedComponent === 'real_estate'
+                  ? 'MatBang_01_West_Storefront'
+                  : selectedComponent === 'satisfaction'
                   ? 'Customer_Prefab (Clone)'
                   : selectedComponent === 'station'
                   ? 'BanMayTinh_01'
@@ -94,13 +98,13 @@ export const UnityInspectorMockup: React.FC<UnityInspectorMockupProps> = ({ conf
             <div className="flex items-center gap-1 bg-[#2e2e2e] border border-[#202020] px-2 py-1 rounded">
               <span className="text-[#808080]">Tag:</span>
               <span className="text-[#dcdcdc] font-semibold">
-                {selectedComponent === 'satisfaction' ? 'Customer' : selectedComponent === 'station' ? 'ComputerStation' : 'Untagged'}
+                {selectedComponent === 'real_estate' ? 'Property' : selectedComponent === 'satisfaction' || selectedComponent === 'realistic_npc' ? 'Customer' : selectedComponent === 'station' ? 'ComputerStation' : 'Untagged'}
               </span>
             </div>
             <div className="flex items-center gap-1 bg-[#2e2e2e] border border-[#202020] px-2 py-1 rounded">
               <span className="text-[#808080]">Layer:</span>
               <span className="text-[#dcdcdc] font-semibold">
-                {selectedComponent === 'satisfaction' ? 'Customer' : selectedComponent === 'station' ? 'Interactable' : 'Default'}
+                {selectedComponent === 'real_estate' ? 'PropertyInteractable' : selectedComponent === 'satisfaction' || selectedComponent === 'realistic_npc' ? 'Customer' : selectedComponent === 'station' ? 'Interactable' : 'Default'}
               </span>
             </div>
           </div>
@@ -108,6 +112,306 @@ export const UnityInspectorMockup: React.FC<UnityInspectorMockupProps> = ({ conf
 
         {/* Dynamic Component Content Based On Selected Tab */}
         <div className="p-3 space-y-3">
+          {/* COMPONENT: Real Estate Property Purchasing */}
+          {selectedComponent === 'real_estate' && (
+            <div className="space-y-3">
+              {/* 1. PropertySlot Script */}
+              <div className="bg-[#383838] border border-amber-500/50 rounded p-2.5 space-y-2.5 shadow-md">
+                <div className="flex items-center justify-between border-b border-[#444] pb-1.5">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-400">
+                    <ChevronDown className="w-3.5 h-3.5" />
+                    <span>Property Slot (Script)</span>
+                  </div>
+                  <span className="text-[10px] bg-amber-900/60 text-amber-300 px-1.5 py-0.5 rounded font-mono">
+                    Real Estate Slot
+                  </span>
+                </div>
+
+                <div className="space-y-1.5 text-[11px]">
+                  <div className="flex justify-between items-center bg-[#2e2e2e] p-1.5 rounded border border-[#242424]">
+                    <span className="text-[#aaa]">Property Id:</span>
+                    <span className="font-mono text-emerald-400 text-[10px]">Property_01_West</span>
+                  </div>
+                  <div className="flex justify-between items-center bg-[#2e2e2e] p-1.5 rounded border border-[#242424]">
+                    <span className="text-[#aaa]">Property Name:</span>
+                    <span className="font-mono text-white text-[10px]">Mặt Bằng 01 - Khu VIP Phía Tây</span>
+                  </div>
+                  <div className="flex justify-between items-center bg-[#2e2e2e] p-1.5 rounded border border-[#242424]">
+                    <span className="text-[#aaa]">Purchase Price:</span>
+                    <span className="font-mono text-amber-400 font-bold text-[11px]">5.000.000 VNĐ</span>
+                  </div>
+                  <div className="flex justify-between items-center bg-[#2e2e2e] p-1.5 rounded border border-[#242424]">
+                    <span className="text-[#aaa]">For Sale 3D Sign:</span>
+                    <span className="font-mono text-sky-400 text-[10px]">Sign_ForSale_01 (GameObject)</span>
+                  </div>
+                  <div className="flex justify-between items-center bg-[#2e2e2e] p-1.5 rounded border border-[#242424]">
+                    <span className="text-[#aaa]">Locked Door Collider:</span>
+                    <span className="font-mono text-rose-400 text-[10px]">BoxCollider (Tường Chặn Cửa)</span>
+                  </div>
+                  <div className="flex justify-between items-center bg-[#2e2e2e] p-1.5 rounded border border-[#242424]">
+                    <span className="text-[#aaa]">Door Pivot Transform:</span>
+                    <span className="font-mono text-sky-400 text-[10px]">Door_Pivot_Storefront</span>
+                  </div>
+                  <div className="flex justify-between items-center bg-[#2e2e2e] p-1.5 rounded border border-[#242424]">
+                    <span className="text-[#aaa]">Interior Lights (List):</span>
+                    <span className="font-mono text-amber-300 text-[10px]">4 Lights (Tắt ban đầu, Bật khi mua)</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. PropertyPurchasingManager Script */}
+              <div className="bg-[#383838] border border-emerald-500/50 rounded p-2.5 space-y-2.5 shadow-md">
+                <div className="flex items-center justify-between border-b border-[#444] pb-1.5">
+                  <div className="flex items-center gap-1.5 font-bold text-emerald-400">
+                    <ChevronDown className="w-3.5 h-3.5" />
+                    <span>Property Purchasing Manager (Script)</span>
+                  </div>
+                  <span className="text-[10px] bg-emerald-900/60 text-emerald-300 px-1.5 py-0.5 rounded font-mono">
+                    Raycast &amp; Economy
+                  </span>
+                </div>
+
+                <div className="space-y-1.5 text-[11px]">
+                  <div className="flex justify-between items-center bg-[#2e2e2e] p-1.5 rounded border border-[#242424]">
+                    <span className="text-[#aaa]">Player Camera:</span>
+                    <span className="font-mono text-sky-400 text-[10px]">Main Camera (Transform)</span>
+                  </div>
+                  <div className="flex justify-between items-center bg-[#2e2e2e] p-1.5 rounded border border-[#242424]">
+                    <span className="text-[#aaa]">Raycast Distance:</span>
+                    <span className="font-mono text-white text-[10px]">3.5 Mét</span>
+                  </div>
+                  <div className="flex justify-between items-center bg-[#2e2e2e] p-1.5 rounded border border-[#242424]">
+                    <span className="text-[#aaa]">Purchase Key:</span>
+                    <span className="font-mono text-emerald-400 font-bold text-[10px]">KeyCode.E</span>
+                  </div>
+                  <div className="flex justify-between items-center bg-[#2e2e2e] p-1.5 rounded border border-[#242424]">
+                    <span className="text-[#aaa]">Interaction Prompt UI:</span>
+                    <span className="font-mono text-white text-[10px]">[E] Mua mặt bằng mở rộng - Giá: 5.000.000 VNĐ</span>
+                  </div>
+                  <div className="bg-[#242424] p-2 rounded border border-[#333] space-y-1">
+                    <div className="text-[#888] text-[10px] font-bold">XỬ LÝ ĐIỀU KIỆN (CONDITION EXECUTION):</div>
+                    <div className="text-rose-400 text-[10px]">
+                      • Quỹ &lt; 5.000.000 VNĐ: Log đỏ "Không đủ tiền! Cần 5.000.000 VNĐ để mua mặt bằng."
+                    </div>
+                    <div className="text-emerald-400 text-[10px]">
+                      • Quỹ ≥ 5.000.000 VNĐ: Trừ 5.000.000đ, mở cửa, bật đèn, log xanh "Chúc mừng! Đã mở khóa mặt bằng mới."
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          {/* COMPONENT: Realistic Asian Male NPC & Inverse Kinematics */}
+          {selectedComponent === 'realistic_npc' && (
+            <div className="space-y-3">
+              {/* 0. HumanoidModelGLTFLoader Script (Async GLTF/GLB from Public CDN - Replaces Primitives) */}
+              <div className="bg-[#383838] border border-blue-500/50 rounded p-2.5 space-y-2.5 shadow-md">
+                <div className="flex items-center justify-between border-b border-[#444] pb-1.5">
+                  <div className="flex items-center gap-1.5 font-bold text-blue-400">
+                    <ChevronDown className="w-3.5 h-3.5" />
+                    <span>Humanoid Model GLTF Loader (Script)</span>
+                  </div>
+                  <span className="text-[10px] bg-blue-900/60 text-blue-300 px-1.5 py-0.5 rounded font-mono">
+                    CDN Async GLB
+                  </span>
+                </div>
+
+                <div className="space-y-1.5 text-[11px]">
+                  <div className="flex justify-between items-center bg-[#2e2e2e] p-1.5 rounded border border-[#242424]">
+                    <span className="text-[#aaa]">Avatar GLB CDN URL:</span>
+                    <span className="font-mono text-emerald-400 text-[10px] truncate max-w-[210px]">
+                      https://models.readyplayer.me/6460d3594ae79bdd72a67a84.glb
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center bg-[#2e2e2e] p-1.5 rounded border border-[#242424]">
+                    <span className="text-[#aaa]">Animator Controller:</span>
+                    <span className="font-mono text-sky-400 text-[10px]">Customer_Humanoid_Controller</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5 text-[10px]">
+                    <div className="bg-[#262626] p-1.5 rounded border border-[#333]">
+                      <span className="text-[#888]">Animation State 1:</span>
+                      <div className="text-emerald-400 font-bold font-mono">Idle (Thở & cử động)</div>
+                    </div>
+                    <div className="bg-[#262626] p-1.5 rounded border border-[#333]">
+                      <span className="text-[#888]">Animation State 2:</span>
+                      <div className="text-amber-400 font-bold font-mono">Sitting (Ngồi chơi net)</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between bg-emerald-950/40 border border-emerald-500/30 px-2 py-1 rounded text-[10px] text-emerald-300">
+                    <span>✓ Anti-Primitives Check:</span>
+                    <span className="font-bold">Zero Cubes / Zero Spheres / 100% GLTF PBR Mesh</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 1. CustomerAnimationController Script (Mecanim Clips & Desk Surface Hand IK) */}
+              <div className="bg-[#383838] border border-emerald-500/50 rounded p-2.5 space-y-3 shadow-md">
+                <div className="flex items-center justify-between border-b border-[#444] pb-1.5">
+                  <div className="flex items-center gap-1.5 font-bold text-emerald-400">
+                    <ChevronDown className="w-3.5 h-3.5" />
+                    <span>Customer Animation Controller (Script)</span>
+                  </div>
+                  <span className="text-[10px] text-emerald-300 font-mono">🎮 Mecanim & Desk IK</span>
+                </div>
+
+                <div className="space-y-2 text-[11px]">
+                  <div className="flex justify-between items-center bg-[#2e2e2e] p-1.5 rounded border border-[#242424]">
+                    <span className="text-[#aaa]">Runtime Animator Controller:</span>
+                    <span className="font-mono text-white text-[10px] truncate max-w-[190px]">AC_CustomerHumanoid (AnimatorController)</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    <div className="bg-[#2e2e2e] p-1.5 rounded border border-[#242424] flex justify-between">
+                      <span className="text-[#888]">Idle State:</span>
+                      <span className="font-mono text-emerald-400 font-semibold">"Idle" (Thở tự nhiên)</span>
+                    </div>
+                    <div className="bg-[#2e2e2e] p-1.5 rounded border border-[#242424] flex justify-between">
+                      <span className="text-[#888]">Sitting State:</span>
+                      <span className="font-mono text-sky-400 font-semibold">"Sitting" (Ngồi net)</span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center bg-[#2e2e2e] p-1.5 rounded border border-[#242424]">
+                    <span className="text-[#aaa]">Desk Surface IK Transform:</span>
+                    <span className="font-mono text-amber-300 text-[10px] truncate max-w-[190px]">BanMay_01/Desk_Surface</span>
+                  </div>
+                  <div className="flex justify-between items-center bg-[#2e2e2e] p-1.5 rounded border border-[#242424]">
+                    <span className="text-[#aaa]">Left Hand IK (WASD keys):</span>
+                    <span className="font-mono text-emerald-400 text-[10px] truncate max-w-[190px]">BanMay_01/Keyboard/WASD_Target</span>
+                  </div>
+                  <div className="flex justify-between items-center bg-[#2e2e2e] p-1.5 rounded border border-[#242424]">
+                    <span className="text-[#aaa]">Right Hand IK (Gaming Mouse):</span>
+                    <span className="font-mono text-sky-400 text-[10px] truncate max-w-[190px]">BanMay_01/Mouse/Mouse_IK_Target</span>
+                  </div>
+
+                  <div className="pt-1 border-t border-[#444] text-[10px] space-y-1">
+                    <div className="text-[#888] font-semibold">Cơ chế tương tác mặt bàn & Micro-motions:</div>
+                    <div className="grid grid-cols-2 gap-1 text-[#bbb]">
+                      <div className="bg-[#262626] p-1 rounded">✓ Snap To Desk Surface (Raycast)</div>
+                      <div className="bg-[#262626] p-1 rounded">✓ Hand Surface Height: 0.025m</div>
+                      <div className="bg-[#262626] p-1 rounded">✓ Micro Gaming: Nhấp phím & rê chuột</div>
+                      <div className="bg-[#262626] p-1 rounded">✓ Drinking Routine: Nâng cốc uống nước</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. RealisticCustomerModelController Script */}
+              <div className="bg-[#383838] border border-purple-500/50 rounded p-2.5 space-y-3 shadow-md">
+                <div className="flex items-center justify-between border-b border-[#444] pb-1.5">
+                  <div className="flex items-center gap-1.5 font-bold text-purple-400">
+                    <ChevronDown className="w-3.5 h-3.5" />
+                    <span>Realistic Customer Model Controller (Script)</span>
+                  </div>
+                  <span className="text-[10px] text-purple-300 font-mono">⚡ Humanoid IK</span>
+                </div>
+
+                <div className="space-y-2 text-[11px]">
+                  <div className="flex justify-between items-center bg-[#2e2e2e] p-1.5 rounded border border-[#242424]">
+                    <span className="text-[#aaa]">IK Weight (Tay & Mắt):</span>
+                    <span className="font-mono text-purple-400 font-bold">1.0 (Full Control)</span>
+                  </div>
+                  <div className="flex justify-between items-center bg-[#2e2e2e] p-1.5 rounded border border-[#242424]">
+                    <span className="text-[#aaa]">Keyboard IK Target (WASD):</span>
+                    <span className="font-mono text-emerald-400 text-[10px] truncate max-w-[190px]">BanMay_01/Keyboard/WASD_Target</span>
+                  </div>
+                  <div className="flex justify-between items-center bg-[#2e2e2e] p-1.5 rounded border border-[#242424]">
+                    <span className="text-[#aaa]">Mouse IK Target (Chuột Gaming):</span>
+                    <span className="font-mono text-sky-400 text-[10px] truncate max-w-[190px]">BanMay_01/Mouse/Mouse_IK_Target</span>
+                  </div>
+                  <div className="flex justify-between items-center bg-[#2e2e2e] p-1.5 rounded border border-[#242424]">
+                    <span className="text-[#aaa]">Monitor LookAt Target:</span>
+                    <span className="font-mono text-amber-300 text-[10px] truncate max-w-[190px]">BanMay_01/Monitor/Screen_Center</span>
+                  </div>
+
+                  <div className="pt-1 border-t border-[#444] text-[10px] space-y-1">
+                    <div className="text-[#888] font-semibold">Cấu trúc khớp bàn tay (3 khớp x 5 ngón):</div>
+                    <div className="grid grid-cols-2 gap-1 text-[#bbb]">
+                      <div className="bg-[#262626] p-1 rounded">✓ Ngón cái: Trapeziometacarpal + IP</div>
+                      <div className="bg-[#262626] p-1 rounded">✓ Ngón trỏ: MCP + PIP + DIP</div>
+                      <div className="bg-[#262626] p-1 rounded">✓ Ngón giữa: MCP + PIP + DIP (WASD)</div>
+                      <div className="bg-[#262626] p-1 rounded">✓ Ngón đeo nhẫn & út: Rigging chuẩn</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 2. Skinned Mesh Renderer (PBR SSS Skin Material) */}
+              <div className="bg-[#383838] border border-slate-700 rounded p-2.5 space-y-2">
+                <div className="flex items-center justify-between border-b border-[#444] pb-1">
+                  <div className="flex items-center gap-1.5 font-bold text-[#e0e0e0]">
+                    <ChevronDown className="w-3.5 h-3.5" />
+                    <span>Skinned Mesh Renderer (Asian Male Face & SSS Skin)</span>
+                  </div>
+                </div>
+                <div className="space-y-1.5 text-[10px] text-[#aaa]">
+                  <div className="flex justify-between">
+                    <span>Mesh Khuôn Mặt Nam Á:</span>
+                    <span className="text-white font-mono">AsianMale_Face_LOD0.fbx</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Vật liệu da (SSS PBR Material):</span>
+                    <span className="text-emerald-400 font-mono">M_AsianSkin_SubsurfaceScatter (2K)</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Tóc Hair Cards (Texture gai xước):</span>
+                    <span className="text-sky-400 font-mono">M_AsianHairCards_Aniso</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Trang phục:</span>
+                    <span className="text-amber-300 font-mono">Áo Phông Trắng Casual (White Cotton Tee)</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. LOD Group Component */}
+              <div className="bg-[#383838] border border-slate-700 rounded p-2.5 space-y-2">
+                <div className="flex items-center justify-between border-b border-[#444] pb-1">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-400">
+                    <ChevronDown className="w-3.5 h-3.5" />
+                    <span>LOD Group (Tối Ưu Hóa Render Theo Cự Ly)</span>
+                  </div>
+                  <span className="text-[10px] text-amber-300">3 Levels</span>
+                </div>
+                <div className="grid grid-cols-4 gap-1 text-[10px] text-center">
+                  <div className="bg-emerald-950/60 border border-emerald-600/50 p-1.5 rounded">
+                    <div className="font-bold text-emerald-400">LOD 0</div>
+                    <div className="text-[9px] text-[#aaa]">100% - 60%</div>
+                    <div className="text-[8px] text-emerald-300">Full Rig & Da 2K</div>
+                  </div>
+                  <div className="bg-sky-950/60 border border-sky-600/50 p-1.5 rounded">
+                    <div className="font-bold text-sky-400">LOD 1</div>
+                    <div className="text-[9px] text-[#aaa]">60% - 25%</div>
+                    <div className="text-[8px] text-sky-300">Giảm bớt khớp</div>
+                  </div>
+                  <div className="bg-amber-950/60 border border-amber-600/50 p-1.5 rounded">
+                    <div className="font-bold text-amber-400">LOD 2</div>
+                    <div className="text-[9px] text-[#aaa]">25% - 5%</div>
+                    <div className="text-[8px] text-amber-300">Low Poly Mesh</div>
+                  </div>
+                  <div className="bg-rose-950/60 border border-rose-600/50 p-1.5 rounded">
+                    <div className="font-bold text-rose-400">Culled</div>
+                    <div className="text-[9px] text-[#aaa]">&lt; 5%</div>
+                    <div className="text-[8px] text-rose-300">Ẩn hoàn toàn</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 4. Capsule Collider Component */}
+              <div className="bg-[#383838] border border-slate-700 rounded p-2.5 space-y-2">
+                <div className="flex items-center justify-between border-b border-[#444] pb-1">
+                  <div className="flex items-center gap-1.5 font-bold text-emerald-400">
+                    <ChevronDown className="w-3.5 h-3.5" />
+                    <span>Capsule Collider (Hitbox Ngồi &amp; Tương Tác F&B)</span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-1.5 text-[10px] text-[#aaa]">
+                  <div className="bg-[#2e2e2e] p-1 rounded">Center Y: <span className="text-white font-mono">0.85m</span></div>
+                  <div className="bg-[#2e2e2e] p-1 rounded">Radius: <span className="text-white font-mono">0.35m</span></div>
+                  <div className="bg-[#2e2e2e] p-1 rounded">Height: <span className="text-white font-mono">1.70m</span></div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* COMPONENT: CustomerSatisfaction */}
           {selectedComponent === 'satisfaction' && (
             <div className="space-y-3">

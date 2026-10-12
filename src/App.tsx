@@ -6,8 +6,6 @@
 import React, { useState, useCallback } from 'react';
 import { defaultScriptConfig, ScriptConfig } from './data/csharpScripts';
 import { ThreeSimulator } from './components/ThreeSimulator';
-import { ManagementPanel } from './components/ManagementPanel';
-import { TycoonEngine } from './game/tycoonEngine';
 import { ScriptViewer } from './components/ScriptViewer';
 import { UnityStepGuide } from './components/UnityStepGuide';
 import { UnityInspectorMockup } from './components/UnityInspectorMockup';
@@ -34,11 +32,6 @@ export default function App() {
     'simulator' | 'satisfaction' | 'scripts' | 'guide' | 'inspector' | 'config'
   >('simulator');
   const [config, setConfig] = useState<ScriptConfig>(defaultScriptConfig);
-  // Engine kinh tế dùng chung cho mô phỏng 3D và bảng quản lý (tự lưu vào localStorage)
-  const [engine] = useState(() => new TycoonEngine({ useStorage: true }));
-  const scrollToManagement = useCallback(() => {
-    document.getElementById('management-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, []);
   const [activeCustomers, setActiveCustomers] = useState<CustomerSatisfactionBreakdown[]>([]);
   const [recentReviews, setRecentReviews] = useState<CustomerSatisfactionBreakdown[]>([]);
 
@@ -302,12 +295,8 @@ export default function App() {
             <div className="space-y-6">
               <ThreeSimulator
                 config={config}
-                engine={engine}
-                onOpenManagement={scrollToManagement}
                 onSatisfactionUpdated={handleSatisfactionUpdated}
               />
-
-              <ManagementPanel engine={engine} />
 
               {/* Guide cards below simulator */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

@@ -6,25 +6,132 @@ import {
   generateWaitingQueueManagerScript,
   generateComputerStationScript,
   generateMoneyManagerScript,
+  generatePlayerFBDeliveryScript,
+  generateRealisticCustomerIKScript,
+  generateHumanoidModelGLTFLoaderScript,
+  generateCustomerAnimationControllerScript,
+  generatePropertyPurchasingScript,
+  generateVipDoorControllerScript,
+  generateHardwarePlacementSystemScript,
 } from '../data/csharpScripts';
-import { tycoonScripts, tycoonScriptOrder, ScriptEntry } from '../data/unityScripts';
-import { Copy, Check, Download, Users, Network, CheckCircle2, Cpu, Smile, DollarSign } from 'lucide-react';
+import { Copy, Check, Users, Cpu, Smile, DollarSign, UtensilsCrossed, UserCheck, Sparkles, CheckCircle2, Download, Network, Box, PlayCircle, Building2, DoorOpen, Hammer, ShoppingBag } from 'lucide-react';
 
 interface ScriptViewerProps {
   config: ScriptConfig;
 }
 
 export const ScriptViewer: React.FC<ScriptViewerProps> = ({ config }) => {
-  const [activeTab, setActiveTab] = useState<string>('satisfaction');
+  const [activeTab, setActiveTab] = useState<'hardware_placement' | 'vip_door' | 'property_purchasing' | 'gltf_loader' | 'anim_controller' | 'ik_npc' | 'flow' | 'station' | 'queue' | 'money' | 'delivery' | 'satisfaction'>('hardware_placement');
   const [copied, setCopied] = useState<boolean>(false);
 
-  const scripts: Record<string, ScriptEntry> = {
-    ...tycoonScripts,
+  const scripts = {
+    hardware_placement: {
+      fileName: 'HardwareShopAndPlacementSystem.cs',
+      path: 'Assets/Scripts/Hardware/HardwareShopAndPlacementSystem.cs',
+      title: 'HardwareShopAndPlacementSystem.cs (7 Loại Linh Kiện x 5 Tiers, Balo Inventory [B], Raycast Hologram & Snap Surface)',
+      description: 'Kiến trúc mô phỏng lắp ráp tự do (Internet Cafe Simulator Style): Quản lý 7 loại linh kiện (Monitor, PCCase, Mouse, Keyboard, Headset, Desk, Chair) chia thành 5 Tiers. Tích hợp Balo [B], Raycast Hologram Ghost Mesh có Snapping Surface (Desk & Chair bám Floor; Màn hình, Case, Phím, Chuột, Tai nghe bám Mặt Bàn) và kiểm tra va chạm OverlapBox (Green: Hợp lệ / Red: Trùng lặp).',
+      code: generateHardwarePlacementSystemScript(config),
+      highlights: [
+        '7 Component Types: Monitor, PCCase, Mouse, Keyboard, Headset, Desk, Chair chuẩn enum.',
+        '5 Tiers cấp độ linh kiện: Tier 1 Standard -> Tier 2 Gaming -> Tier 3 Mechanical -> Tier 4 Premium -> Tier 5 Esports.',
+        'Hệ thống Balo Inventory [B]: Mua từ shop vào Balo, click bất kỳ để bắt đầu Build Mode.',
+        'Snapping Surface Logic: Desk và Chair bắt buộc snap Floor; Phụ kiện PC bắt buộc snap Desk Top.',
+        'Collision Validation Hologram: Physics.OverlapBox kiểm tra va chạm (Vật liệu xanh trong suốt 0x00FF00 / Đỏ 0xFF0000).',
+        'Finalize Placement: Nhấn Chuột Trái hoặc [E] sinh prefab thật và trừ món đồ khỏi Balo.',
+      ],
+    },
+    vip_door: {
+      fileName: 'VipDoorController.cs',
+      path: 'Assets/Scripts/VIP/VipDoorController.cs',
+      title: 'VipDoorController.cs (Bản Lề Hinge Pivot, Đồng Bộ BoxCollider isTrigger & NavMesh Update)',
+      description: 'Quản lý bản lề mở cửa phòng VIP (Hinge Pivot đặt tại mép jamb). Đồng bộ BoxCollider: khi cửa mở chuyển sang isTrigger = true (giải phóng physical volume) để người chơi và NPC tự do bước qua lối vào rộng 1.6m mà không bị va chạm với collider tĩnh. Tự động cập nhật NavMeshObstacle (tắt carving khi mở) để AI NavMeshAgent xem khe cửa là đường đi bộ thông suốt.',
+      code: generateVipDoorControllerScript(config),
+      highlights: [
+        'Hinge Pivot Logic: Xoay trục rỗng tại mép cửa (-3.4, 0, -4.8), cánh cửa lệch nửa bề rộng (+0.8m).',
+        'BoxCollider Synchronization: Khi mở cửa, chuyển isTrigger = true (hoặc disable) để không còn vật thể va chạm tĩnh.',
+        'Lối vào rộng chuẩn 1.6m: Đảm bảo capsule người chơi (bán kính 0.3 - 0.5m) bước qua dễ dàng, không bị kẹt mép.',
+        'NavMesh Obstacle Update: Tắt carving khi mở cửa để AI NPC xem lối đi là walkable ground.',
+        'Hiển thị UI prompt tương tác trong phạm vi 2.5m: "[E] Đẩy cửa phòng VIP" / "[E] Đóng cửa phòng VIP".',
+        'Hỗ trợ âm thanh mở/đóng cửa và xoay mượt mà với Quaternion.Lerp (góc mở 90 độ).',
+      ],
+    },
+    property_purchasing: {
+      fileName: 'PropertyPurchasingManager.cs',
+      path: 'Assets/Scripts/RealEstate/PropertyPurchasingManager.cs',
+      title: 'PropertyPurchasingManager.cs (Hệ Thống Mua Mặt Bằng Mở Rộng 5.000.000 VNĐ)',
+      description: 'Mở rộng bản đồ ra mặt đường phố bên ngoài Cyber Cafe, quản lý 2 tòa nhà/mặt bằng mở rộng bên cạnh với bảng hiệu "BÁN MẶT BẰNG / FOR SALE". Tích hợp Raycast góc nhìn thứ nhất, hiển thị UI prompt "[E] Mua mặt bằng mở rộng - Giá: 5.000.000 VNĐ", kiểm tra MoneyManager, dỡ bỏ BoxCollider chặn cửa, bật đèn nội thất và log kết quả console.',
+      code: generatePropertyPurchasingScript(config),
+      highlights: [
+        'Tích hợp Raycast góc nhìn thứ nhất dò tìm bảng BÁN MẶT BẰNG trong tầm tương tác 3.5m.',
+        'Hiển thị floating UI prompt: "[E] Mua mặt bằng mở rộng - Giá: 5.000.000 VNĐ".',
+        'Kiểm tra MoneyManager.Instance: nếu < 5.000.000 VNĐ -> báo lỗi đỏ: "Không đủ tiền! Cần 5.000.000 VNĐ để mua mặt bằng."',
+        'Nếu đủ tiền: trừ đúng 5.000.000 VNĐ qua MoneyManager.Instance.TrySpendMoney().',
+        'Vô hiệu hóa bảng "FOR SALE" và tắt BoxCollider chặn cửa để người chơi tự do bước vào trong.',
+        'Tự động bật sáng dàn đèn nội thất bên trong mặt bằng vừa mở khóa.',
+        'Ghi nhật ký thành công màu xanh trong console: "Chúc mừng! Đã mở khóa mặt bằng mới."',
+      ],
+    },
+    gltf_loader: {
+      fileName: 'HumanoidModelGLTFLoader.cs',
+      path: 'Assets/Scripts/Customer/HumanoidModelGLTFLoader.cs',
+      title: 'HumanoidModelGLTFLoader.cs (Nạp 3D GLTF/GLB Từ CDN - THAY THẾ HOÀN TOÀN PRIMITIVES)',
+      description: 'CHẤM DỨT HOÀN TOÀN việc dùng GameObject.CreatePrimitive hay ghép hình khối thô sơ. Tải bất đồng bộ mô hình 3D nam Châu Á / Việt Nam siêu chân thực (GLTF/GLB) từ URL/CDN công khai (Ready Player Me / Mixamo), map Humanoid Rig và gắn Animator có sẵn state "Idle" (thở tự nhiên) và "Sitting" (ngồi chơi máy net).',
+      code: generateHumanoidModelGLTFLoaderScript(config),
+      highlights: [
+        'NGHIÊM CẤM GameObject.CreatePrimitive(): Loại bỏ triệt để các hình hộp Cube, hình trụ Cylinder, hình cầu Sphere.',
+        'Tải bất đồng bộ GLTF/GLB qua UnityWebRequest từ CDN công khai (Ready Player Me: 6460d3594ae79bdd72a67a84.glb).',
+        'Lưới đa giác cao cấp (High-poly smooth meshes) với vật liệu PBR đầy đủ Albedo, Normal, Roughness, Subsurface Scattering.',
+        'Tự động map Mecanim Humanoid Avatar Rig chuẩn cho toàn bộ xương (Hips, Spine, Head, Arms, 5-finger bones).',
+        'Animator Component với 2 trạng thái cốt lõi: "Idle" (thở phập phồng, lắc nhẹ) và "Sitting" (ngồi tự nhiên tại ghế gaming).',
+        'Tự động gắn CustomerAnimationController điều khiển clip và IK bàn máy, cùng RealisticCustomerModelController.',
+      ],
+    },
+    anim_controller: {
+      fileName: 'CustomerAnimationController.cs',
+      path: 'Assets/Scripts/Customer/CustomerAnimationController.cs',
+      title: 'CustomerAnimationController.cs (Animator Clips & Desk Surface Hand IK)',
+      description: 'Nhắm mục tiêu chuẩn Mecanim Humanoid Rig từ mô hình GLTF/GLB đã nạp. Áp dụng animation clips chuẩn "Sitting" và "Idle" từ AnimatorController, đồng thời kích hoạt hệ thống Inverse Kinematics (IK) hai bàn tay tương tác lên mặt bàn, phím WASD và chuột gaming.',
+      code: generateCustomerAnimationControllerScript(config),
+      highlights: [
+        'Targeting Mecanim Humanoid Avatar Rig từ mô hình 3D GLTF/GLB đã nạp.',
+        'Áp dụng Animation Clips chuẩn Unity Humanoid "Sitting" (ngồi chơi máy) và "Idle" (đứng thở tự nhiên).',
+        'Inverse Kinematics (OnAnimatorIK): Tay trái đặt lên cụm phím WASD, tay phải ôm chuột gaming.',
+        'Tự động raycast phát hiện mặt bàn (Desk Surface Snapping) tránh lún/lơ lửng bàn tay.',
+        'Micro-motions: nhấp phím WASD, rê chuột quang vi mô, nhịp thở ngực và F&B drinking routine.',
+      ],
+    },
+    ik_npc: {
+      fileName: 'RealisticCustomerModelController.cs',
+      path: 'Assets/Scripts/Customer/RealisticCustomerModelController.cs',
+      title: 'RealisticCustomerModelController.cs (Mô Hình 3D Nam Á & Inverse Kinematics IK)',
+      description: 'Điều khiển mô hình khách hàng 3D nam Châu Á / Việt Nam chân thực: cấu trúc khuôn mặt chuẩn, tóc layer xước gai nhọn (hair cards), bàn tay 5 ngón đầy đủ 3 khớp, Inverse Kinematics (IK) lên phím WASD & chuột gaming, chớp mắt tự nhiên và LOD Group.',
+      code: generateRealisticCustomerIKScript(config),
+      highlights: [
+        'Khuôn mặt nam Châu Á: xương hàm vuông vừa, sống mũi thẳng gọn, mắt 2 mí, môi tự nhiên.',
+        'Hệ xương bàn tay 5 ngón đầy đủ 3 đốt (MCP, PIP, DIP), móng tay bóng nhẹ và cơ bắp cẳng tay.',
+        'Inverse Kinematics (OnAnimatorIK): Tay trái đặt lên cụm WASD gõ phím, tay phải ôm chuột gaming rê và click.',
+        'Biểu cảm khuôn mặt & chớp mắt tự nhiên (Blendshape), fidgets xoa mặt, bẻ ngón tay và uống nước.',
+        'Tích hợp LODGroup (LOD 0/1/2) và CapsuleCollider (0.35m x 1.7m) tương thích F&B Delivery.',
+      ],
+    },
+    delivery: {
+      fileName: 'PlayerFBDeliveryController.cs',
+      path: 'Assets/Scripts/Player/PlayerFBDeliveryController.cs',
+      title: 'PlayerFBDeliveryController.cs (Hệ Thống Giao Đồ Ăn & Tủ Mát Nước Ngọt F&B)',
+      description: 'Quản lý trạng thái bưng bê (isCarryingFood). Lại gần tủ lạnh bấm [E] để lấy khay mì/nước, lại gần khách gọi món bấm [E] Phục Vụ -> Thu +15.000 VNĐ vào MoneyManager và tăng +5đ Hài Lòng.',
+      code: generatePlayerFBDeliveryScript(config),
+      highlights: [
+        'Biến trạng thái bool isCarryingFood = false được quản lý chặt chẽ theo State Machine.',
+        'Tương tác Tủ Lạnh: Cự ly gần hiện UI prompt "[E] Chuẩn bị đồ ăn/uống" -> Bấm [E] set isCarryingFood = true.',
+        'Hiện biểu tượng khay đồ ăn trên màn hình HUD người chơi khi đang bưng bê.',
+        'Tương tác Phục vụ: Đến bàn khách NeedsFoodOrDrink -> Hiện "[E] Phục vụ" -> Thu +15.000đ và tăng +5đ hài lòng.',
+      ],
+    },
     satisfaction: {
       fileName: 'CustomerSatisfaction.cs',
       path: 'Assets/Scripts/Customer/CustomerSatisfaction.cs',
       title: 'CustomerSatisfaction.cs (Hệ Thống Điểm Hài Lòng Base 70 & Đánh Giá Sao)',
-      description: 'Khởi điểm 70đ. Cộng điểm chất lượng máy (RAM*2, VGA*3, Monitor*2), giá thuê, trừ điểm chờ đợi. Phân loại 5 cấp bậc từ Very Unhappy (0-19 😡) đến Very Happy (80-100 😍).',
+      description: 'Khởi điểm 70đ. Cộng điểm chất lượng máy (RAM*2, VGA*3, Monitor*2), giá thuê, phục vụ đồ ăn (+5đ), trừ điểm chờ đợi. Phân loại 5 cấp bậc từ Very Unhappy (0-19 😡) đến Very Happy (80-100 😍).',
       code: generateCustomerSatisfactionScript(),
       highlights: [
         'Khởi điểm 70đ. Giới hạn trong khoảng 0 -> 100 điểm.',
@@ -36,14 +143,14 @@ export const ScriptViewer: React.FC<ScriptViewerProps> = ({ config }) => {
     flow: {
       fileName: 'CustomerAI.cs',
       path: 'Assets/Scripts/Customer/CustomerAI.cs',
-      title: 'CustomerAI.cs (Tích Hợp CustomerSatisfaction & WaitingQueue)',
-      description: 'Khi tìm được máy, tự động áp dụng chất lượng máy vào điểm hài lòng. Nếu hết máy, tự động vào hàng đợi. Khi rời máy, in báo cáo trải nghiệm.',
+      title: 'CustomerAI.cs (Tích Hợp CustomerSatisfaction, WaitingQueue & Gọi Đồ Ăn F&B)',
+      description: 'Trọn vòng đời khách: Vào quán -> Tìm máy -> Nếu hết máy: Vào hàng đợi -> Ngồi máy -> Đếm ngược 60-120s chuyển sang NeedsFoodOrDrink & hiện Billboard Bubble "Nước/Mì (+15k)" -> Nhận phục vụ -> Tính điểm hài lòng -> Rời đi.',
       code: generateCustomerAIFullCycleScript(),
       highlights: [
-        'Tự động thêm component CustomerSatisfaction nếu GameObject chưa có.',
-        'Nếu hết máy, tự động gọi WaitingQueueManager.Instance.TryJoinQueue().',
-        'Gọi satisfactionSystem.ApplyComputerQuality(assignedPC) ngay khi chọn máy.',
-        'In hóa đơn trải nghiệm chi tiết ra Console khi hoàn tất buổi chơi.',
+        'Trạng thái CustomerState.NeedsFoodOrDrink xuất hiện sau timer ngẫu nhiên (60 - 120s).',
+        'Hiển thị 2D Billboard Bubble Canvas trên màn hình PC khách hàng.',
+        'Hàm ReceiveFood() xóa bubble order, reset timer và kích hoạt +5đ hài lòng.',
+        'Xuất log Console: "[Máy {ID}] Khách gọi đồ ăn/thức uống!".',
       ],
     },
     station: {
@@ -74,8 +181,8 @@ export const ScriptViewer: React.FC<ScriptViewerProps> = ({ config }) => {
     money: {
       fileName: 'MoneyManager.cs',
       path: 'Assets/Scripts/Managers/MoneyManager.cs',
-      title: 'MoneyManager.cs (Quản Lý Dòng Tiền Tiệm Net)',
-      description: 'Singleton quản lý tiền doanh thu từ thuê máy tính và chi tiêu nâng cấp linh kiện an toàn.',
+      title: 'MoneyManager.cs (Quản Lý Dòng Tiền Tiệm Net & Thu Tiền F&B)',
+      description: 'Singleton quản lý tiền doanh thu từ thuê máy tính, doanh thu phục vụ đồ ăn/nước uống (+15.000 VNĐ) và chi tiêu nâng cấp linh kiện an toàn.',
       code: generateMoneyManagerScript(),
       highlights: [
         'Singleton Pattern dễ truy cập toàn cục: MoneyManager.Instance.',
@@ -126,10 +233,10 @@ export const ScriptViewer: React.FC<ScriptViewerProps> = ({ config }) => {
             <span>Mã Nguồn C# Trọn Vẹn &bull; Sẵn Sàng Build Trong Unity</span>
           </div>
           <h2 className="text-xl md:text-2xl font-black text-white mt-1">
-            Bộ C# Scripts Cho Net Tycoon (15 Scripts: Lõi + Kinh Tế)
+            Bộ C# Scripts Cho Net Tycoon (Đầy Đủ 6 Scripts Chuẩn Unity)
           </h2>
           <p className="text-xs md:text-sm text-slate-300 mt-1">
-            Đã tích hợp hệ thống điểm hài lòng <strong>Base 70</strong>, nâng cấp linh kiện, hàng đợi, <strong>đồ ăn nước uống, kho, khu vực, mặt bằng, nhân viên, đối thủ, chi nhánh</strong> và game loop hoàn chỉnh. Các file mới là file .cs thật, copy thẳng vào Assets/Scripts.
+            Đã tích hợp đầy đủ hệ thống điểm hài lòng <strong>Base 70</strong>, nâng cấp linh kiện, hàng đợi chờ máy và <strong>Giao Đồ Ăn/Uống (F&amp;B System)</strong>.
           </p>
         </div>
 
@@ -160,6 +267,90 @@ export const ScriptViewer: React.FC<ScriptViewerProps> = ({ config }) => {
       {/* Script Selector Tabs */}
       <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-900 border border-slate-800 rounded-xl">
+          <button
+            onClick={() => setActiveTab('hardware_placement')}
+            className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
+              activeTab === 'hardware_placement'
+                ? 'bg-cyan-600 text-white shadow-sm ring-1 ring-cyan-400'
+                : 'text-cyan-300 hover:text-cyan-200'
+            }`}
+          >
+            <Hammer className="w-4 h-4 text-cyan-300" />
+            <span>★ Shop &amp; Đặt Đồ 5-Tier: HardwareShopAndPlacementSystem.cs</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('vip_door')}
+            className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
+              activeTab === 'vip_door'
+                ? 'bg-amber-600 text-white shadow-sm ring-1 ring-amber-400'
+                : 'text-amber-300 hover:text-amber-200'
+            }`}
+          >
+            <DoorOpen className="w-4 h-4 text-amber-300" />
+            <span>★ Cửa Phòng VIP (Hinge & NavMesh): VipDoorController.cs</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('property_purchasing')}
+            className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
+              activeTab === 'property_purchasing'
+                ? 'bg-amber-600 text-white shadow-sm ring-1 ring-amber-400'
+                : 'text-amber-300 hover:text-amber-200'
+            }`}
+          >
+            <Building2 className="w-4 h-4 text-amber-300" />
+            <span>★ Mua Mặt Bằng (Phố): PropertyPurchasingManager.cs</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('gltf_loader')}
+            className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
+              activeTab === 'gltf_loader'
+                ? 'bg-blue-600 text-white shadow-sm ring-1 ring-blue-400'
+                : 'text-blue-300 hover:text-blue-200'
+            }`}
+          >
+            <Box className="w-4 h-4 text-blue-300" />
+            <span>★ 3D GLTF Loader: HumanoidModelGLTFLoader.cs</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('anim_controller')}
+            className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
+              activeTab === 'anim_controller'
+                ? 'bg-emerald-600 text-white shadow-sm ring-1 ring-emerald-400'
+                : 'text-emerald-300 hover:text-emerald-200'
+            }`}
+          >
+            <PlayCircle className="w-4 h-4 text-emerald-300" />
+            <span>★ Animator & Hand IK: CustomerAnimationController.cs</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('ik_npc')}
+            className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
+              activeTab === 'ik_npc'
+                ? 'bg-purple-600 text-white shadow-sm ring-1 ring-purple-400'
+                : 'text-purple-300 hover:text-purple-200'
+            }`}
+          >
+            <Sparkles className="w-4 h-4 text-purple-300" />
+            <span>★ IK & Bàn Tay: RealisticCustomerIK.cs</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('delivery')}
+            className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
+              activeTab === 'delivery'
+                ? 'bg-amber-600 text-white shadow-sm ring-1 ring-amber-400'
+                : 'text-amber-400 hover:text-amber-300'
+            }`}
+          >
+            <UtensilsCrossed className="w-4 h-4" />
+            <span>★ F&B: PlayerFBDelivery.cs</span>
+          </button>
+
           <button
             onClick={() => setActiveTab('satisfaction')}
             className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
@@ -219,18 +410,6 @@ export const ScriptViewer: React.FC<ScriptViewerProps> = ({ config }) => {
             <DollarSign className="w-4 h-4" />
             <span>5. MoneyManager.cs</span>
           </button>
-
-          {tycoonScriptOrder.map(t => (
-            <button
-              key={t.key}
-              onClick={() => setActiveTab(t.key)}
-              className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
-                activeTab === t.key ? `${t.color} text-white shadow-sm` : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <span>{t.label}</span>
-            </button>
-          ))}
         </div>
 
         {/* Script Highlights Box */}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   Smile,
   Frown,
@@ -20,7 +20,26 @@ import {
   Sparkles,
   ArrowRight,
   TrendingUp,
+  TrendingDown,
+  Activity,
+  Play,
+  Pause,
+  RotateCcw,
+  Zap,
+  Plus,
+  SlidersHorizontal,
 } from 'lucide-react';
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ReferenceLine,
+} from 'recharts';
 
 export interface CustomerSatisfactionBreakdown {
   id: string;
@@ -37,7 +56,6 @@ export interface CustomerSatisfactionBreakdown {
   internetBonus: number;
   acBonus: number;
   foodBonus: number;
-  expectationScore?: number;
   finalScore: number;
   tier: 'VeryHappy' | 'Happy' | 'Normal' | 'Unhappy' | 'VeryUnhappy';
   emoji: string;
@@ -47,6 +65,39 @@ export interface CustomerSatisfactionBreakdown {
   reviewComment: string;
   timestamp: string;
 }
+
+export interface SatisfactionTrendPoint {
+  time: string;
+  timestamp: number;
+  avgScore: number;
+  sandboxScore: number;
+  customerCount: number;
+  activeAverage: number | null;
+  tier: string;
+  emoji: string;
+}
+
+const generateInitialTrendData = (): SatisfactionTrendPoint[] => {
+  const points: SatisfactionTrendPoint[] = [];
+  const now = Date.now();
+  // Realistic initial timeline trajectory
+  const sampleScores = [70.0, 71.5, 73.0, 72.0, 75.5, 77.0, 76.2, 79.8, 81.0, 83.5, 82.0, 84.5];
+  for (let i = 12; i >= 1; i--) {
+    const timeDate = new Date(now - i * 3500);
+    const score = sampleScores[12 - i] ?? 75;
+    points.push({
+      time: timeDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      timestamp: timeDate.getTime(),
+      avgScore: score,
+      sandboxScore: 82,
+      customerCount: Math.min(6, Math.max(1, Math.floor(score / 16))),
+      activeAverage: score,
+      tier: score >= 80 ? 'Very Happy' : score >= 60 ? 'Happy' : 'Normal',
+      emoji: score >= 80 ? '😍' : score >= 60 ? '🙂' : '😐',
+    });
+  }
+  return points;
+};
 
 interface SatisfactionDashboardProps {
   activeCustomers?: CustomerSatisfactionBreakdown[];
@@ -166,6 +217,132 @@ export const SatisfactionDashboard: React.FC<SatisfactionDashboardProps> = ({
     };
   }
 
+  // Real-time Trend Chart State (Recharts)
+  const [trendHistory, setTrendHistory] = useState<SatisfactionTrendPoint[]>(() => generateInitialTrendData());
+  const [isLiveStreaming, setIsLiveStreaming] = useState<boolean>(true);
+  const [showSandboxLine, setShowSandboxLine] = useState<boolean>(true);
+  const [showReferenceLines, setShowReferenceLines] = useState<boolean>(true);
+  const [streamSpeedMs, setStreamSpeedMs] = useState<number>(3000);
+
+  const activeCustomersRef = useRef(activeCustomers);
+  activeCustomersRef.current = activeCustomers;
+
+  const finalScoreRef = useRef(finalScore);
+  finalScoreRef.current = finalScore;
+
+  // Real-time interval effect: updates satisfaction history every 3s
+  useEffect(() => {
+    if (!isLiveStreaming) return;
+
+    const interval = setInterval(() => {
+      setTrendHistory(prev => {
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('vi-VN', {
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit',
+        });
+
+        const currentCustomers = activeCustomersRef.current;
+        const currentFinal = finalScoreRef.current;
+
+        let baseValue = currentFinal;
+        let activeAvg: number | null = null;
+        if (currentCustomers.length > 0) {
+          const sum = currentCustomers.reduce((acc, c) => acc + c.finalScore, 0);
+          activeAvg = Math.round((sum / currentCustomers.length) * 10) / 10;
+          baseValue = activeAvg;
+        }
+
+        // Add subtle organic micro-jitter (+/- 0.8 points) to emulate live customer reactions
+        const jitter = (Math.random() - 0.48) * 1.6;
+        const newScore = Math.max(0, Math.min(100, Math.round((baseValue + jitter) * 10) / 10));
+
+        const newPoint: SatisfactionTrendPoint = {
+          time: timeStr,
+          timestamp: Date.now(),
+          avgScore: newScore,
+          sandboxScore: currentFinal,
+          customerCount: currentCustomers.length,
+          activeAverage: activeAvg,
+          tier:
+            newScore >= 80
+              ? 'Very Happy'
+              : newScore >= 60
+              ? 'Happy'
+              : newScore >= 40
+              ? 'Normal'
+              : newScore >= 20
+              ? 'Unhappy'
+              : 'Very Unhappy',
+          emoji:
+            newScore >= 80 ? '😍' : newScore >= 60 ? '🙂' : newScore >= 40 ? '😐' : newScore >= 20 ? '😕' : '😡',
+        };
+
+        const updated = [...prev, newPoint];
+        if (updated.length > 25) {
+          return updated.slice(updated.length - 25);
+        }
+        return updated;
+      });
+    }, streamSpeedMs);
+
+    return () => clearInterval(interval);
+  }, [isLiveStreaming, streamSpeedMs]);
+
+  // Quick action: simulate customer mood burst / review spike
+  const triggerSimulationSurge = useCallback((delta: number) => {
+    setTrendHistory(prev => {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('vi-VN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      });
+      const lastScore = prev.length > 0 ? prev[prev.length - 1].avgScore : finalScore;
+      const targetScore = Math.max(0, Math.min(100, Math.round((lastScore + delta) * 10) / 10));
+      const newPoint: SatisfactionTrendPoint = {
+        time: timeStr,
+        timestamp: Date.now(),
+        avgScore: targetScore,
+        sandboxScore: finalScore,
+        customerCount: activeCustomers.length > 0 ? activeCustomers.length + (delta > 0 ? 1 : 0) : 3,
+        activeAverage: targetScore,
+        tier:
+          targetScore >= 80
+            ? 'Very Happy'
+            : targetScore >= 60
+            ? 'Happy'
+            : targetScore >= 40
+            ? 'Normal'
+            : targetScore >= 20
+            ? 'Unhappy'
+            : 'Very Unhappy',
+        emoji:
+          targetScore >= 80 ? '😍' : targetScore >= 60 ? '🙂' : targetScore >= 40 ? '😐' : targetScore >= 20 ? '😕' : '😡',
+      };
+      const updated = [...prev, newPoint];
+      return updated.length > 25 ? updated.slice(updated.length - 25) : updated;
+    });
+  }, [finalScore, activeCustomers.length]);
+
+  const resetTrendHistory = useCallback(() => {
+    setTrendHistory(generateInitialTrendData());
+  }, []);
+
+  // Summary Metrics for the chart
+  const latestTrendPoint = trendHistory[trendHistory.length - 1];
+  const firstTrendPoint = trendHistory[0];
+  const currentAvgScore = latestTrendPoint ? latestTrendPoint.avgScore : finalScore;
+  const trendDelta = latestTrendPoint && firstTrendPoint
+    ? Math.round((latestTrendPoint.avgScore - firstTrendPoint.avgScore) * 10) / 10
+    : 0;
+  const peakScore = trendHistory.length > 0 ? Math.max(...trendHistory.map(p => p.avgScore)) : finalScore;
+  const minScore = trendHistory.length > 0 ? Math.min(...trendHistory.map(p => p.avgScore)) : finalScore;
+  const aboveBasePercentage = Math.round(
+    (trendHistory.filter(p => p.avgScore >= 70).length / (trendHistory.length || 1)) * 100
+  );
+
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
       {/* 1. Header Overview Banner */}
@@ -261,7 +438,387 @@ export const SatisfactionDashboard: React.FC<SatisfactionDashboardProps> = ({
         ))}
       </div>
 
-      {/* 3. INTERACTIVE FORMULA CALCULATOR SANDBOX */}
+      {/* 3. REAL-TIME SATISFACTION TREND LINE CHART (RECHARTS) */}
+      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-5">
+        {/* Header with Title and Control Toolbar */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+                <Activity className="w-4 h-4 animate-pulse" />
+              </div>
+              <h3 className="text-base md:text-lg font-bold text-white flex items-center gap-2">
+                <span>Biểu Đồ Xu Hướng Điểm Hài Lòng Trung Bình (Real-Time Trend)</span>
+              </h3>
+              {/* Pulse status badge */}
+              <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-950/60 border border-emerald-500/30 text-emerald-400">
+                <span className="relative flex h-2 w-2">
+                  {isLiveStreaming && (
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  )}
+                  <span
+                    className={`relative inline-flex rounded-full h-2 w-2 ${
+                      isLiveStreaming ? 'bg-emerald-500' : 'bg-slate-500'
+                    }`}
+                  />
+                </span>
+                <span>{isLiveStreaming ? 'Live (3s/nhịp)' : 'Đã Tạm Dừng'}</span>
+              </div>
+            </div>
+            <p className="text-xs text-slate-400">
+              Trực quan hóa diễn biến điểm trung bình của khách hàng theo thời gian thực (Base 70 &rarr; 0-100), cập nhật cùng lúc với cấu hình máy và khách trong quán.
+            </p>
+          </div>
+
+          {/* Action Toolbar */}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setIsLiveStreaming(!isLiveStreaming)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
+                isLiveStreaming
+                  ? 'bg-amber-500/10 border border-amber-500/30 text-amber-300 hover:bg-amber-500/20'
+                  : 'bg-emerald-600 text-white hover:bg-emerald-500'
+              }`}
+              title={isLiveStreaming ? 'Tạm dừng ghi nhận' : 'Tiếp tục ghi nhận thời gian thực'}
+            >
+              {isLiveStreaming ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+              <span>{isLiveStreaming ? 'Tạm Dừng' : 'Tiếp Tục'}</span>
+            </button>
+
+            <button
+              onClick={() => triggerSimulationSurge(5)}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/20 flex items-center gap-1.5 transition-all"
+              title="Mô phỏng đợt khách mới đánh giá hài lòng (+5 điểm)"
+            >
+              <Zap className="w-3.5 h-3.5 text-indigo-400" />
+              <span>+Đợt Khách Mới (+5đ)</span>
+            </button>
+
+            <button
+              onClick={() => triggerSimulationSurge(-6)}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-500/10 border border-rose-500/30 text-rose-300 hover:bg-rose-500/20 flex items-center gap-1.5 transition-all"
+              title="Mô phỏng sự cố mạng lag / chờ lâu (-6 điểm)"
+            >
+              <TrendingDown className="w-3.5 h-3.5 text-rose-400" />
+              <span>-Sự Cố (-6đ)</span>
+            </button>
+
+            <button
+              onClick={resetTrendHistory}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-700 transition-all border border-slate-700"
+              title="Đặt lại chuỗi dữ liệu biểu đồ"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        {/* 4 Real-time KPI Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-3.5">
+            <div className="flex items-center justify-between text-xs text-slate-400">
+              <span>Điểm TB Hiện Tại</span>
+              <span className="text-base">{latestTrendPoint?.emoji ?? '🙂'}</span>
+            </div>
+            <div className="mt-1 flex items-baseline gap-2">
+              <span className="text-2xl font-black font-mono text-emerald-400">
+                {currentAvgScore}
+              </span>
+              <span className="text-xs text-slate-500 font-mono">/ 100</span>
+              <span
+                className={`text-[11px] font-mono font-bold ml-auto flex items-center gap-0.5 ${
+                  trendDelta >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                }`}
+              >
+                {trendDelta >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                {trendDelta >= 0 ? `+${trendDelta}` : trendDelta}đ
+              </span>
+            </div>
+            <div className="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
+              <span>Xếp hạng:</span>
+              <span className="font-semibold text-slate-200">{latestTrendPoint?.tier ?? 'Happy'}</span>
+            </div>
+          </div>
+
+          <div className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-3.5">
+            <div className="text-xs text-slate-400 flex items-center justify-between">
+              <span>Đỉnh &amp; Đáy Chuỗi Đo</span>
+              <span className="text-xs font-mono text-amber-400">Biên độ</span>
+            </div>
+            <div className="mt-1 flex items-baseline justify-between font-mono">
+              <div>
+                <span className="text-[10px] text-slate-500 uppercase">Max:</span>{' '}
+                <span className="text-base font-bold text-emerald-400">{peakScore}đ</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-500 uppercase">Min:</span>{' '}
+                <span className="text-base font-bold text-amber-400">{minScore}đ</span>
+              </div>
+            </div>
+            <div className="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
+              <span>Chênh lệch đỉnh-đáy:</span>
+              <span className="font-mono text-slate-300 font-semibold">
+                {(peakScore - minScore).toFixed(1)}đ
+              </span>
+            </div>
+          </div>
+
+          <div className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-3.5">
+            <div className="text-xs text-slate-400 flex items-center justify-between">
+              <span>Tỷ Lệ Đạt Chuẩn (&ge;70đ)</span>
+              <span className="text-xs font-mono text-emerald-400">Base 70</span>
+            </div>
+            <div className="mt-1 flex items-baseline gap-2">
+              <span className="text-2xl font-black font-mono text-sky-400">
+                {aboveBasePercentage}%
+              </span>
+              <span className="text-xs text-slate-500 font-mono">mẫu đạt</span>
+            </div>
+            <div className="w-full bg-slate-900 h-1.5 rounded-full overflow-hidden mt-1.5">
+              <div
+                className="bg-sky-400 h-full rounded-full transition-all duration-500"
+                style={{ width: `${aboveBasePercentage}%` }}
+              />
+            </div>
+          </div>
+
+          <div className="bg-slate-950/70 border border-slate-800/80 rounded-xl p-3.5">
+            <div className="text-xs text-slate-400 flex items-center justify-between">
+              <span>Khách &amp; Cấu Hình Lab</span>
+              <Cpu className="w-3.5 h-3.5 text-pink-400" />
+            </div>
+            <div className="mt-1 flex items-baseline justify-between font-mono">
+              <div>
+                <span className="text-[10px] text-slate-500">Khách live:</span>{' '}
+                <span className="text-base font-bold text-white">{activeCustomers.length}</span>
+              </div>
+              <div>
+                <span className="text-[10px] text-slate-500">Lab:</span>{' '}
+                <span className="text-base font-bold text-pink-400">{finalScore}đ</span>
+              </div>
+            </div>
+            <div className="text-[11px] text-slate-400 mt-1 flex items-center justify-between">
+              <span>Tổng số mẫu ghi:</span>
+              <span className="font-mono text-slate-300 font-semibold">{trendHistory.length} nhịp</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Display Toggles */}
+        <div className="flex flex-wrap items-center justify-between gap-3 text-xs bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/80">
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-1.5 cursor-pointer text-slate-300 hover:text-white select-none">
+              <input
+                type="checkbox"
+                checked={showSandboxLine}
+                onChange={e => setShowSandboxLine(e.target.checked)}
+                className="accent-pink-500 rounded"
+              />
+              <span className="flex items-center gap-1 text-[11px]">
+                <span className="w-2.5 h-0.5 bg-pink-500 inline-block rounded" />
+                Đường Điểm Cấu Hình Lab ({finalScore}đ)
+              </span>
+            </label>
+
+            <label className="flex items-center gap-1.5 cursor-pointer text-slate-300 hover:text-white select-none">
+              <input
+                type="checkbox"
+                checked={showReferenceLines}
+                onChange={e => setShowReferenceLines(e.target.checked)}
+                className="accent-emerald-500 rounded"
+              />
+              <span className="flex items-center gap-1 text-[11px]">
+                <span className="w-2.5 h-0.5 bg-amber-400 inline-block rounded" />
+                Mốc Chuẩn (Base 70đ &amp; Mục Tiêu 80đ)
+              </span>
+            </label>
+          </div>
+
+          <div className="flex items-center gap-2 text-slate-400 text-[11px]">
+            <span>Tốc độ quét:</span>
+            <div className="flex items-center gap-1">
+              {[
+                { label: '1.5s', ms: 1500 },
+                { label: '3s', ms: 3000 },
+                { label: '5s', ms: 5000 },
+              ].map(opt => (
+                <button
+                  key={opt.ms}
+                  onClick={() => setStreamSpeedMs(opt.ms)}
+                  className={`px-2 py-0.5 rounded text-[10px] font-mono transition-all ${
+                    streamSpeedMs === opt.ms
+                      ? 'bg-emerald-600 text-white font-bold'
+                      : 'bg-slate-900 text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Recharts LineChart */}
+        <div className="w-full h-72 sm:h-80 relative">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart
+              data={trendHistory}
+              margin={{ top: 12, right: 28, left: -14, bottom: 0 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.35} />
+              <XAxis
+                dataKey="time"
+                stroke="#64748b"
+                tick={{ fill: '#94a3b8', fontSize: 11 }}
+                tickLine={{ stroke: '#475569' }}
+              />
+              <YAxis
+                domain={[0, 100]}
+                ticks={[0, 20, 40, 60, 70, 80, 100]}
+                stroke="#64748b"
+                tick={{ fill: '#94a3b8', fontSize: 11 }}
+                tickLine={{ stroke: '#475569' }}
+                unit="đ"
+              />
+              <Tooltip
+                content={({ active, payload }) => {
+                  if (active && payload && payload.length) {
+                    const data = payload[0].payload as SatisfactionTrendPoint;
+                    return (
+                      <div className="bg-slate-950/95 border border-slate-700/80 rounded-xl p-3 shadow-2xl backdrop-blur-md text-xs space-y-2 min-w-[210px] pointer-events-none">
+                        <div className="flex items-center justify-between border-b border-slate-800 pb-1.5 text-slate-400">
+                          <span className="font-mono text-[11px] flex items-center gap-1 text-slate-300">
+                            <Clock className="w-3 h-3 text-emerald-400" />
+                            {data.time}
+                          </span>
+                          <span className="text-base">{data.emoji}</span>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-300 font-medium">Điểm TB Hiện Tại:</span>
+                            <span className="font-mono font-black text-emerald-400 text-sm">
+                              {data.avgScore} đ
+                            </span>
+                          </div>
+                          {showSandboxLine && (
+                            <div className="flex items-center justify-between text-[11px]">
+                              <span className="text-slate-400">Điểm Cấu Hình Lab:</span>
+                              <span className="font-mono font-bold text-pink-400">
+                                {data.sandboxScore} đ
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="text-slate-400">Khách Đang Chơi:</span>
+                            <span className="font-mono font-bold text-sky-400">
+                              {data.customerCount} khách
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="text-slate-400">So Với Base 70:</span>
+                            <span
+                              className={`font-mono font-bold ${
+                                data.avgScore >= 70 ? 'text-emerald-400' : 'text-rose-400'
+                              }`}
+                            >
+                              {data.avgScore >= 70
+                                ? `+${(data.avgScore - 70).toFixed(1)}`
+                                : (data.avgScore - 70).toFixed(1)}{' '}
+                              đ
+                            </span>
+                          </div>
+                        </div>
+                        <div className="pt-1.5 border-t border-slate-800/80 flex items-center justify-between text-[10px]">
+                          <span className="text-slate-400">Trạng Thái:</span>
+                          <span
+                            className={`font-semibold ${
+                              data.avgScore >= 80
+                                ? 'text-emerald-400'
+                                : data.avgScore >= 60
+                                ? 'text-sky-400'
+                                : 'text-amber-400'
+                            }`}
+                          >
+                            {data.tier}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
+              />
+              <Legend wrapperStyle={{ paddingTop: 8, fontSize: 11 }} iconType="circle" />
+
+              {showReferenceLines && (
+                <>
+                  <ReferenceLine
+                    y={70}
+                    stroke="#f59e0b"
+                    strokeDasharray="4 4"
+                    label={{
+                      value: 'Base 70đ',
+                      fill: '#f59e0b',
+                      fontSize: 10,
+                      position: 'insideTopRight',
+                    }}
+                  />
+                  <ReferenceLine
+                    y={80}
+                    stroke="#10b981"
+                    strokeDasharray="4 4"
+                    label={{
+                      value: 'Chuẩn 5⭐ (80đ)',
+                      fill: '#10b981',
+                      fontSize: 10,
+                      position: 'insideTopRight',
+                    }}
+                  />
+                </>
+              )}
+
+              <Line
+                type="monotone"
+                dataKey="avgScore"
+                name="Điểm Hài Lòng Trung Bình (Live)"
+                stroke="#10b981"
+                strokeWidth={3}
+                dot={{ r: 2.5, fill: '#10b981', stroke: '#020617', strokeWidth: 1.5 }}
+                activeDot={{ r: 6, fill: '#34d399', stroke: '#fff', strokeWidth: 2 }}
+                isAnimationActive={false}
+              />
+
+              {showSandboxLine && (
+                <Line
+                  type="monotone"
+                  dataKey="sandboxScore"
+                  name="Điểm Cấu Hình Lab (Sandbox)"
+                  stroke="#ec4899"
+                  strokeWidth={2}
+                  strokeDasharray="4 4"
+                  dot={false}
+                  isAnimationActive={false}
+                />
+              )}
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Footer info note */}
+        <div className="pt-2 border-t border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[11px] text-slate-400">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" />
+            <span>
+              Mỗi khách vào quán bắt đầu với <strong>70đ</strong>. Điểm trung bình duy trì trên <strong>80đ (Very Happy)</strong> giúp kích hoạt hiệu ứng quán đông khách và đánh giá 5 sao.
+            </span>
+          </div>
+          <span className="font-mono text-slate-500 whitespace-nowrap">
+            Thư viện: recharts ^2.15 / react-19
+          </span>
+        </div>
+      </div>
+
+      {/* 4. INTERACTIVE FORMULA CALCULATOR SANDBOX */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left: Interactive Controls (7 cols) */}
         <div className="lg:col-span-7 bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-6">
@@ -570,7 +1127,7 @@ export const SatisfactionDashboard: React.FC<SatisfactionDashboardProps> = ({
         </div>
       </div>
 
-      {/* 4. REAL-TIME CUSTOMERS IN SHOP & WAITING QUEUE */}
+      {/* 5. REAL-TIME CUSTOMERS IN SHOP & WAITING QUEUE */}
       <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
           <div>
@@ -642,7 +1199,7 @@ export const SatisfactionDashboard: React.FC<SatisfactionDashboardProps> = ({
         )}
       </div>
 
-      {/* 5. RECENT REVIEWS FEED */}
+      {/* 6. RECENT REVIEWS FEED */}
       {recentReviews.length > 0 && (
         <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
           <div className="border-b border-slate-800 pb-3 flex items-center justify-between">
